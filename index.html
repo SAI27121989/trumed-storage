@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TruMed | Direct Access Dashboard</title>
+    <title>TruMed | Professional Lab Management</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -13,6 +13,14 @@
         .occupied { background-color: #f0f7ff; border: 1.5px solid #3b82f6; box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05); }
         .selected { outline: 3px solid #f59e0b; background-color: #fffbeb; z-index: 10; transform: translateY(-2px); }
         .modal { position: fixed; top: 20%; left: 50%; transform: translateX(-50%); background: #0f172a; color: white; padding: 24px; border-radius: 20px; z-index: 50; display: none; width: 90%; max-width: 400px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
+        
+        /* Print Styles */
+        @media print {
+            body * { visibility: hidden; }
+            #print-area, #print-area * { visibility: visible; }
+            #print-area { position: absolute; left: 0; top: 0; width: 100%; }
+            .no-print { display: none !important; }
+        }
     </style>
 </head>
 <body onload="initApp()">
@@ -23,21 +31,21 @@
         <button onclick="closeModal()" class="mt-8 w-full bg-slate-800 py-3 rounded-xl font-bold hover:bg-slate-700 transition-colors">Dismiss</button>
     </div>
 
-    <header class="bg-white px-10 py-5 shadow-sm border-b flex flex-col lg:flex-row justify-between items-center gap-6">
+    <header class="bg-white px-10 py-5 shadow-sm border-b flex flex-col lg:flex-row justify-between items-center gap-6 no-print">
         <div>
             <h1 class="text-blue-900 font-black text-2xl tracking-tight">TruMed Path Labs India Pvt Ltd</h1>
             <div class="flex gap-3 mt-1">
-                <span class="text-[9px] bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-full font-bold uppercase">7-Day Check Active</span>
+                <span class="text-[9px] bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-full font-bold uppercase">7-Day Cleanup Active</span>
                 <span id="stat-counter" class="text-[9px] bg-slate-100 text-slate-500 px-2.5 py-1 rounded-full font-bold uppercase">0/100 Occupied</span>
             </div>
         </div>
         <div class="flex gap-2 w-full max-w-md">
-            <input type="text" id="global-search" placeholder="Quick Search (7 Days)..." class="flex-1 p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm outline-none focus:border-blue-400">
+            <input type="text" id="global-search" placeholder="Search 7-Day History..." class="flex-1 p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm outline-none focus:border-blue-400">
             <button onclick="deepSearch()" class="bg-slate-900 text-white px-6 py-2 rounded-2xl text-xs font-black shadow-md hover:bg-black transition-all">SEARCH</button>
         </div>
     </header>
 
-    <main class="max-w-[1400px] mx-auto p-6 lg:p-10 grid grid-cols-1 lg:grid-cols-12 gap-10">
+    <main class="max-w-[1400px] mx-auto p-6 lg:p-10 grid grid-cols-1 lg:grid-cols-12 gap-10 no-print">
         <div class="lg:col-span-3 space-y-6">
             <div class="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm">
                 <div class="text-[11px] font-black text-blue-600 uppercase mb-3 tracking-widest" id="display-slot">Position: Slot 1</div>
@@ -53,13 +61,12 @@
             </div>
 
             <div class="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm space-y-4">
-                <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Archive View</label>
-                <input type="date" id="current-date" onchange="loadData()" class="w-full p-4 border border-slate-100 rounded-2xl font-bold bg-slate-50 text-sm outline-none focus:border-blue-300">
-                <select id="rack-select" onchange="loadData()" class="w-full p-4 border border-slate-100 rounded-2xl font-bold bg-slate-50 text-sm outline-none focus:border-blue-300"></select>
+                <input type="date" id="current-date" onchange="loadData()" class="w-full p-4 border border-slate-100 rounded-2xl font-bold bg-slate-50 text-sm outline-none">
+                <select id="rack-select" onchange="loadData()" class="w-full p-4 border border-slate-100 rounded-2xl font-bold bg-slate-50 text-sm outline-none"></select>
                 
-                <div class="pt-6 border-t border-slate-50">
-                    <button onclick="exportFullDay()" class="w-full bg-emerald-600 text-white p-4 rounded-2xl font-black text-[11px] uppercase shadow-lg hover:bg-emerald-700 transition-all">Export Daily Backup</button>
-                    <p class="text-[9px] text-slate-400 text-center mt-3 font-medium">Includes Rack ID & Slot ID</p>
+                <div class="pt-6 border-t border-slate-50 space-y-3">
+                    <button onclick="exportFullDay()" class="w-full bg-emerald-600 text-white p-4 rounded-2xl font-black text-[11px] uppercase shadow-lg hover:bg-emerald-700 transition-all">Excel Backup (CSV)</button>
+                    <button onclick="printRackReport()" class="w-full bg-slate-900 text-white p-4 rounded-2xl font-black text-[11px] uppercase shadow-lg hover:bg-black transition-all">Print Rack Report</button>
                 </div>
             </div>
         </div>
@@ -68,6 +75,27 @@
             <div id="grid" class="grid grid-cols-5 md:grid-cols-10 gap-4"></div>
         </div>
     </main>
+
+    <div id="print-area" class="p-10 bg-white hidden">
+        <div class="border-b-2 border-black pb-4 mb-6">
+            <h1 class="text-2xl font-black">TRUMED PATH LABS INDIA PVT LTD</h1>
+            <p class="text-sm font-bold uppercase tracking-widest">Rack Summary Report</p>
+        </div>
+        <div class="flex justify-between mb-8 font-bold">
+            <p id="print-date-display"></p>
+            <p id="print-rack-display"></p>
+        </div>
+        <table class="w-full border-collapse border border-slate-300">
+            <thead>
+                <tr class="bg-slate-100">
+                    <th class="border border-slate-300 p-2 text-left">Slot</th>
+                    <th class="border border-slate-300 p-2 text-left">Barcode ID</th>
+                    <th class="border border-slate-300 p-2 text-left">Scan Time</th>
+                </tr>
+            </thead>
+            <tbody id="print-table-body"></tbody>
+        </table>
+    </div>
 
     <script>
         const firebaseConfig = {
@@ -85,7 +113,6 @@
         let currentSlot = 1;
         let activeData = {};
 
-        // Runs automatically on page load
         function initApp() {
             const select = document.getElementById('rack-select');
             for(let i=1; i<=100; i++) { 
@@ -122,11 +149,9 @@
             const code = document.getElementById('barcode-input').value.trim().toUpperCase();
             if(!code) return;
             const btn = document.getElementById('save-btn');
-            btn.disabled = true; btn.innerText = "FAST CHECK...";
+            btn.disabled = true; btn.innerText = "CHECKING...";
 
             let dupFound = false;
-            let dupMsg = "";
-
             for (let i = 0; i < 7; i++) {
                 let d = new Date(); d.setDate(d.getDate() - i);
                 let ds = d.toISOString().split('T')[0];
@@ -135,9 +160,9 @@
                 if(dayData) {
                     for(let r in dayData) {
                         for(let sl in dayData[r]) {
-                            const val = dayData[r][sl]?.code || dayData[r][sl];
-                            if(val === code) {
-                                dupFound = true; dupMsg = `Duplicate found on ${ds}\nRack: ${r}, Slot: ${sl.replace('slot-','')}`;
+                            if((dayData[r][sl]?.code || dayData[r][sl]) === code) {
+                                dupFound = true; 
+                                alert(`🛑 DUPLICATE BLOCKED\nBarcode ${code} was found on ${ds} in ${r}`);
                                 break;
                             }
                         }
@@ -147,10 +172,7 @@
                 if(dupFound) break;
             }
 
-            if(dupFound) {
-                alert("🛑 DUPLICATE BLOCKED\n" + dupMsg);
-                document.getElementById('barcode-input').value = '';
-            } else {
+            if(!dupFound) {
                 const date = document.getElementById('current-date').value;
                 const rack = document.getElementById('rack-select').value;
                 const entry = { code: code, time: new Date().toLocaleString() };
@@ -169,55 +191,32 @@
                 let count = 0;
                 for(let i=1; i<=100; i++) {
                     const el = document.getElementById(`slot-${i}`);
-                    const data = activeData[`slot-${i}`];
-                    const code = data?.code || (typeof data === 'string' ? data : '');
+                    const code = activeData[`slot-${i}`]?.code || (typeof activeData[`slot-${i}`] === 'string' ? activeData[`slot-${i}`] : '');
                     document.getElementById(`txt-${i}`).innerText = code;
-                    if(code) { el.classList.add('occupied'); count++; } 
-                    else { el.classList.remove('occupied'); }
+                    code ? (el.classList.add('occupied'), count++) : el.classList.remove('occupied');
                 }
                 document.getElementById('stat-counter').innerText = `${count}/100 Occupied`;
             });
         }
 
-        function showAudit() {
-            const data = activeData[`slot-${currentSlot}`];
-            const modal = document.getElementById('info-modal');
-            document.getElementById('modal-title').innerText = `Slot ${currentSlot} Audit`;
-            document.getElementById('modal-body').innerHTML = data?.time 
-                ? `<div class='bg-slate-800 p-5 rounded-2xl border border-slate-700 shadow-inner'><p class='text-slate-400 uppercase text-[10px] font-bold'>Barcode</p><p class='text-white font-black text-xl mb-3'>${data.code}</p><p class='text-slate-400 uppercase text-[10px] font-bold'>Timestamp</p><p class='text-blue-300 font-bold'>${data.time}</p></div>`
-                : "No data recorded for this slot.";
-            modal.style.display = 'block';
-        }
-
-        async function deepSearch() {
-            const term = document.getElementById('global-search').value.trim().toUpperCase();
-            if(!term) return;
-            const body = document.getElementById('modal-body');
-            const modal = document.getElementById('info-modal');
-            document.getElementById('modal-title').innerText = "Archive Result";
-            body.innerHTML = "Scanning 7-day database...";
-            modal.style.display = 'block';
-            let found = false;
-            for (let i = 0; i < 7; i++) {
-                let d = new Date(); d.setDate(d.getDate() - i);
-                let ds = d.toISOString().split('T')[0];
-                const s = await db.ref(`samples/${ds}`).once('value');
-                const day = s.val();
-                if(day) {
-                    for(let r in day) {
-                        for(let sl in day[r]) {
-                            const val = day[r][sl]?.code || day[r][sl];
-                            if(val === term) {
-                                body.innerHTML = `<div class='bg-emerald-900/50 p-5 rounded-2xl border border-emerald-500/30'><p class='text-emerald-400 font-black text-lg mb-2'>SAMPLE LOCATED</p><p class='text-white text-xs'>DATE: <b>${ds}</b></p><p class='text-white text-xs'>RACK: <b>${r}</b></p><p class='text-white text-xs'>SLOT: <b>${sl.replace('slot-','')}</b></p></div>`;
-                                found = true; break;
-                            }
-                        }
-                        if(found) break;
-                    }
+        function printRackReport() {
+            const date = document.getElementById('current-date').value;
+            const rack = document.getElementById('rack-select').value;
+            document.getElementById('print-date-display').innerText = `Date: ${date}`;
+            document.getElementById('print-rack-display').innerText = `Rack ID: ${rack}`;
+            
+            const tbody = document.getElementById('print-table-body');
+            tbody.innerHTML = '';
+            
+            for(let i=1; i<=100; i++) {
+                const data = activeData[`slot-${i}`];
+                if(data) {
+                    const code = data.code || data;
+                    const time = data.time || "-";
+                    tbody.innerHTML += `<tr><td class="border border-slate-300 p-2">${i}</td><td class="border border-slate-300 p-2 font-bold">${code}</td><td class="border border-slate-300 p-2 text-xs">${time}</td></tr>`;
                 }
-                if(found) break;
             }
-            if(!found) body.innerHTML = "Sample not found in 7-day storage.";
+            window.print();
         }
 
         async function exportFullDay() {
@@ -247,10 +246,47 @@
             document.getElementById('barcode-input').focus();
         }
 
-        function deleteSingleSlot() {
-            if(confirm(`Permanently delete sample from Slot ${currentSlot}?`)) {
-                db.ref(`samples/${document.getElementById('current-date').value}/${document.getElementById('rack-select').value}/slot-${currentSlot}`).remove();
+        function showAudit() {
+            const data = activeData[`slot-${currentSlot}`];
+            const modal = document.getElementById('info-modal');
+            document.getElementById('modal-title').innerText = `Slot ${currentSlot} Audit`;
+            document.getElementById('modal-body').innerHTML = data?.time 
+                ? `<div class='bg-slate-800 p-5 rounded-2xl border border-slate-700'><p class='text-white font-black text-xl mb-3'>${data.code || data}</p><p class='text-blue-300 font-bold'>${data.time || 'No timestamp'}</p></div>`
+                : "No data for this slot.";
+            modal.style.display = 'block';
+        }
+
+        async function deepSearch() {
+            const term = document.getElementById('global-search').value.trim().toUpperCase();
+            if(!term) return;
+            const body = document.getElementById('modal-body');
+            document.getElementById('modal-title').innerText = "Search Result";
+            document.getElementById('info-modal').style.display = 'block';
+            body.innerHTML = "Searching...";
+            let found = false;
+            for (let i = 0; i < 7; i++) {
+                let d = new Date(); d.setDate(d.getDate() - i);
+                let ds = d.toISOString().split('T')[0];
+                const s = await db.ref(`samples/${ds}`).once('value');
+                const day = s.val();
+                if(day) {
+                    for(let r in day) {
+                        for(let sl in day[r]) {
+                            if((day[r][sl]?.code || day[r][sl]) === term) {
+                                body.innerHTML = `<div class='bg-emerald-900/50 p-5 rounded-2xl border border-emerald-500/30 font-bold text-white'><p class='text-lg'>MATCH FOUND</p><p>DATE: ${ds}</p><p>RACK: ${r}</p><p>SLOT: ${sl.replace('slot-','')}</p></div>`;
+                                found = true; break;
+                            }
+                        }
+                        if(found) break;
+                    }
+                }
+                if(found) break;
             }
+            if(!found) body.innerHTML = "Not found in 7-day history.";
+        }
+
+        function deleteSingleSlot() {
+            if(confirm(`Wipe Slot ${currentSlot}?`)) db.ref(`samples/${document.getElementById('current-date').value}/${document.getElementById('rack-select').value}/slot-${currentSlot}`).remove();
         }
 
         function closeModal() { document.getElementById('info-modal').style.display = 'none'; }
