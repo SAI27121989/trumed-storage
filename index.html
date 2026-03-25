@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TruMed | Ultra-Fast Lab Sync</title>
+    <title>TruMed | Ultra-Fast Offline Sync</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -12,6 +12,7 @@
         .slot { border: 1px solid #e2e8f0; background: white; min-height: 60px; border-radius: 10px; position: relative; display: flex; align-items: center; justify-content: center; transition: all 0.1s ease; cursor: pointer; }
         .occupied { background-color: #f0f7ff; border: 1.5px solid #3b82f6; }
         .selected { outline: 3px solid #f59e0b; background-color: #fffbeb; z-index: 10; transform: translateY(-1px); }
+        .syncing { opacity: 0.6; border-style: dashed; }
         .modal { position: fixed; top: 20%; left: 50%; transform: translateX(-50%); background: #0f172a; color: white; padding: 24px; border-radius: 20px; z-index: 50; display: none; width: 90%; max-width: 400px; }
         @media print { body * { visibility: hidden; } #print-area, #print-area * { visibility: visible; } #print-area { position: absolute; left: 0; top: 0; width: 100%; } .no-print { display: none !important; } }
     </style>
@@ -24,11 +25,10 @@
         <button onclick="closeModal()" class="mt-8 w-full bg-slate-800 py-3 rounded-xl font-bold">Dismiss</button>
     </div>
 
-    <header class="bg-white px-10 py-5 shadow-sm border-b flex flex-col lg:flex-row justify-between items-center gap-6 no-print">
+    <header class="bg-white px-10 py-5 shadow-sm border-b flex flex-col lg:row justify-between items-center gap-6 no-print">
         <h1 class="text-blue-900 font-black text-2xl">TruMed Path Labs India Pvt Ltd</h1>
         <div class="flex gap-2 w-full max-w-md">
-            <input type="text" id="global-search" placeholder="Fast Search..." class="flex-1 p-3 bg-slate-50 border rounded-2xl text-sm outline-none">
-            <button onclick="deepSearch()" class="bg-slate-900 text-white px-6 py-2 rounded-2xl text-xs font-black">SEARCH</button>
+            <span id="sync-status" class="text-[10px] bg-emerald-100 text-emerald-700 px-3 py-2 rounded-full font-bold uppercase self-center">Cloud Synced</span>
         </div>
     </header>
 
@@ -37,7 +37,7 @@
             <div class="bg-white p-8 rounded-[32px] border shadow-sm">
                 <div class="text-[11px] font-black text-blue-600 uppercase mb-3" id="display-slot">Position: Slot 1</div>
                 <input type="text" id="barcode-input" placeholder="SCAN BARCODE" class="w-full p-5 border-2 border-slate-50 rounded-2xl font-black text-3xl text-center uppercase focus:border-blue-500 outline-none mb-5 bg-slate-50">
-                <button id="save-btn" onclick="validateAndSave()" class="w-full bg-blue-600 text-white font-black py-5 rounded-2xl uppercase shadow-xl hover:bg-blue-700 active:scale-95 transition-all">Save & Next</button>
+                <button id="save-btn" onclick="validateAndSave()" class="w-full bg-blue-600 text-white font-black py-5 rounded-2xl uppercase shadow-xl hover:bg-blue-700 active:scale-95 transition-all">Instant Save</button>
                 <div class="grid grid-cols-2 gap-3 mt-3">
                     <button onclick="deleteSingleSlot()" class="bg-slate-50 text-slate-400 font-bold py-3 rounded-xl text-[10px] uppercase">Clear</button>
                     <button onclick="showAudit()" class="bg-slate-50 text-slate-500 font-bold py-3 rounded-xl text-[10px] uppercase">Audit</button>
@@ -58,10 +58,10 @@
     </main>
 
     <div id="print-area" class="p-10 bg-white hidden">
-        <h1 class="text-2xl font-black">TRUMED PATH LABS INDIA PVT LTD</h1>
+        <h1 class="text-2xl font-black">TRUMED PATH LABS</h1>
         <p id="print-date-display" class="font-bold mt-4"></p>
         <p id="print-rack-display" class="font-bold mb-6"></p>
-        <table class="w-full border-collapse border border-black"><tbody id="print-table-body"></tbody></table>
+        <table class="w-full border-collapse border border-black" id="print-table"></table>
     </div>
 
     <script>
@@ -84,15 +84,7 @@
                 let o = document.createElement('option'); o.value = `Rack_${i}`; o.innerText = `Rack ${i}`; select.appendChild(o); 
             }
             document.getElementById('current-date').value = new Date().toISOString().split('T')[0];
-            renderGrid(); loadData(); runAutoCleanup();
-        }
-
-        async function runAutoCleanup() {
-            const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 8); 
-            const cutoffStr = cutoff.toISOString().split('T')[0];
-            const snap = await db.ref('samples').once('value');
-            const data = snap.val();
-            for (let date in data) { if (date < cutoffStr) db.ref(`samples/${date}`).remove(); }
+            renderGrid(); loadData();
         }
 
         function renderGrid() {
@@ -108,42 +100,57 @@
         async function validateAndSave() {
             const code = document.getElementById('barcode-input').value.trim().toUpperCase();
             if(!code) return;
-            const btn = document.getElementById('save-btn');
-            btn.disabled = true; btn.innerText = "FAST SAVING...";
+            
+            // 1. INSTANT UI UPDATE (NO WAITING)
+            const date = document.getElementById('current-date').value;
+            const rack = document.getElementById('rack-select').value;
+            const slotToUpdate = currentSlot;
+            
+            document.getElementById(`txt-${slotToUpdate}`).innerText = code;
+            document.getElementById(`slot-${slotToUpdate}`).classList.add('occupied', 'syncing');
+            document.getElementById('barcode-input').value = '';
+            
+            if(currentSlot < 100) setSlot(currentSlot + 1);
+            
+            // 2. BACKGROUND CLOUD SYNC
+            document.getElementById('sync-status').innerText = "Syncing...";
+            document.getElementById('sync-status').className = "text-[10px] bg-orange-100 text-orange-700 px-3 py-2 rounded-full font-bold uppercase self-center";
 
-            // ULTRA-FAST PARALLEL SCAN
-            const dates = Array.from({length: 7}, (_, i) => {
-                let d = new Date(); d.setDate(d.getDate() - i);
-                return d.toISOString().split('T')[0];
-            });
-
-            const snapshots = await Promise.all(dates.map(ds => db.ref(`samples/${ds}`).once('value')));
-            let dupFound = false;
-
-            for(let i=0; i<snapshots.length; i++) {
-                const dayData = snapshots[i].val();
-                if(!dayData) continue;
-                for(let r in dayData) {
-                    for(let sl in dayData[r]) {
-                        if((dayData[r][sl]?.code || dayData[r][sl]) === code) {
-                            dupFound = true;
-                            alert(`🛑 DUPLICATE: Found on ${dates[i]} in ${r}`);
-                            break;
+            try {
+                // Parallel Duplicate Check
+                const dates = Array.from({length: 7}, (_, i) => {
+                    let d = new Date(); d.setDate(d.getDate() - i);
+                    return d.toISOString().split('T')[0];
+                });
+                const snapshots = await Promise.all(dates.map(ds => db.ref(`samples/${ds}`).once('value')));
+                
+                let dupFound = false;
+                for(let i=0; i<snapshots.length; i++) {
+                    const dayData = snapshots[i].val();
+                    if(!dayData) continue;
+                    for(let r in dayData) {
+                        for(let sl in dayData[r]) {
+                            if((dayData[r][sl]?.code || dayData[r][sl]) === code && (r !== rack || sl !== `slot-${slotToUpdate}`)) {
+                                dupFound = true; alert(`⚠️ DUPLICATE DETECTED: ${code} exists on ${dates[i]} in ${r}`); break;
+                            }
                         }
+                        if(dupFound) break;
                     }
                     if(dupFound) break;
                 }
-                if(dupFound) break;
-            }
 
-            if(!dupFound) {
-                const date = document.getElementById('current-date').value;
-                const rack = document.getElementById('rack-select').value;
-                await db.ref(`samples/${date}/${rack}/slot-${currentSlot}`).set({ code: code, time: new Date().toLocaleString() });
-                document.getElementById('barcode-input').value = '';
-                if(currentSlot < 100) setSlot(currentSlot + 1);
-            }
-            btn.disabled = false; btn.innerText = "Save & Next";
+                if(!dupFound) {
+                    await db.ref(`samples/${date}/${rack}/slot-${slotToUpdate}`).set({ code: code, time: new Date().toLocaleString() });
+                } else {
+                    // Undo UI update if duplicate
+                    document.getElementById(`txt-${slotToUpdate}`).innerText = '';
+                    document.getElementById(`slot-${slotToUpdate}`).classList.remove('occupied');
+                }
+            } catch (e) { console.error("Sync Error", e); }
+            
+            document.getElementById(`slot-${slotToUpdate}`).classList.remove('syncing');
+            document.getElementById('sync-status').innerText = "Cloud Synced";
+            document.getElementById('sync-status').className = "text-[10px] bg-emerald-100 text-emerald-700 px-3 py-2 rounded-full font-bold uppercase self-center";
         }
 
         function loadData() {
@@ -159,29 +166,6 @@
             });
         }
 
-        function printRackReport() {
-            document.getElementById('print-date-display').innerText = `Date: ${document.getElementById('current-date').value}`;
-            document.getElementById('print-rack-display').innerText = `Rack: ${document.getElementById('rack-select').value}`;
-            const tbody = document.getElementById('print-table-body');
-            tbody.innerHTML = '<tr><th>Slot</th><th>Barcode</th><th>Time</th></tr>';
-            for(let i=1; i<=100; i++) {
-                const d = activeData[`slot-${i}`];
-                if(d) tbody.innerHTML += `<tr><td>${i}</td><td>${d.code||d}</td><td>${d.time||'-'}</td></tr>`;
-            }
-            window.print();
-        }
-
-        async function exportFullDay() {
-            const date = document.getElementById('current-date').value;
-            const snap = await db.ref(`samples/${date}`).once('value');
-            const data = snap.val();
-            if(!data) return alert("No data.");
-            let csv = "RACK,SLOT,BARCODE,TIME\n";
-            for(let r in data) for(let s in data[r]) csv += `${r},${s.replace('slot-','')},${data[r][s].code||data[r][s]},"${data[r][s].time||''}"\n`;
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Backup_${date}.csv`; a.click();
-        }
-
         function setSlot(i) {
             document.querySelectorAll('.slot').forEach(s => s.classList.remove('selected'));
             currentSlot = i;
@@ -190,22 +174,32 @@
             document.getElementById('barcode-input').focus();
         }
 
-        function showAudit() {
-            const d = activeData[`slot-${currentSlot}`];
-            document.getElementById('modal-title').innerText = `Slot ${currentSlot}`;
-            document.getElementById('modal-body').innerText = d ? `Code: ${d.code||d}\nTime: ${d.time||'-'}` : "Empty";
-            document.getElementById('info-modal').style.display = 'block';
+        function printRackReport() {
+            document.getElementById('print-date-display').innerText = `Date: ${document.getElementById('current-date').value}`;
+            document.getElementById('print-rack-display').innerText = `Rack: ${document.getElementById('rack-select').value}`;
+            let html = '<tr><th border="1">Slot</th><th border="1">Barcode</th></tr>';
+            for(let i=1; i<=100; i++) {
+                const d = activeData[`slot-${i}`];
+                if(d) html += `<tr><td>${i}</td><td>${d.code||d}</td></tr>`;
+            }
+            document.getElementById('print-table').innerHTML = html;
+            window.print();
         }
 
-        async function deepSearch() {
-            const term = document.getElementById('global-search').value.trim().toUpperCase();
-            if(!term) return;
-            alert("Searching 7-day cloud history...");
-            // Reuse parallel scan logic for search speed
+        async function exportFullDay() {
+            const date = document.getElementById('current-date').value;
+            const snap = await db.ref(`samples/${date}`).once('value');
+            const data = snap.val();
+            let csv = "RACK,SLOT,BARCODE\n";
+            for(let r in data) for(let s in data[r]) csv += `${r},${s.replace('slot-','')},${data[r][s].code||data[r][s]}\n`;
+            const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'})); a.download=`TruMed_${date}.csv`; a.click();
         }
 
         function deleteSingleSlot() { if(confirm('Clear slot?')) db.ref(`samples/${document.getElementById('current-date').value}/${document.getElementById('rack-select').value}/slot-${currentSlot}`).remove(); }
-        function closeModal() { document.getElementById('info-modal').style.display = 'none'; }
+        function showAudit() { 
+            const d = activeData[`slot-${currentSlot}`];
+            alert(d ? `Barcode: ${d.code||d}\nTime: ${d.time||'N/A'}` : "Slot is empty");
+        }
         document.getElementById('barcode-input').addEventListener('keypress', (e) => { if(e.key === 'Enter') validateAndSave(); });
     </script>
 </body>
