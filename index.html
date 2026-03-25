@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TruMed | Automated Lab Management</title>
+    <title>TruMed | Direct Access Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -11,22 +11,11 @@
         body { background-color: #f8fafc; font-family: 'Inter', sans-serif; }
         .slot { border: 1px solid #e2e8f0; background: white; min-height: 60px; border-radius: 10px; position: relative; display: flex; align-items: center; justify-content: center; transition: all 0.15s ease; cursor: pointer; }
         .occupied { background-color: #f0f7ff; border: 1.5px solid #3b82f6; box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05); }
-        .selected { outline: 3px solid #f59e0b; background-color: #fffbeb; z-index: 10; transform: translateY(-2px); shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
-        #login-overlay { position: fixed; inset: 0; background: #ffffff; z-index: 100; display: flex; align-items: center; justify-content: center; }
+        .selected { outline: 3px solid #f59e0b; background-color: #fffbeb; z-index: 10; transform: translateY(-2px); }
         .modal { position: fixed; top: 20%; left: 50%; transform: translateX(-50%); background: #0f172a; color: white; padding: 24px; border-radius: 20px; z-index: 50; display: none; width: 90%; max-width: 400px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
     </style>
 </head>
-<body>
-
-    <div id="login-overlay">
-        <div class="p-10 border border-slate-100 rounded-[40px] shadow-2xl w-96 text-center bg-white">
-            <h1 class="text-4xl font-black text-blue-900 tracking-tighter mb-1">TRUMED</h1>
-            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mb-8">Path Labs India Pvt Ltd</p>
-            <input type="password" id="lab-pass" placeholder="Access Key" class="w-full p-4 bg-slate-50 border rounded-2xl mb-4 text-center text-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all">
-            <button onclick="checkLogin()" class="w-full bg-blue-700 text-white py-4 rounded-2xl font-black hover:bg-blue-800 shadow-lg active:scale-95 transition-all">SYSTEM LOGIN</button>
-            <p id="err" class="text-red-500 text-xs mt-4 hidden font-bold">Invalid Authorization</p>
-        </div>
-    </div>
+<body onload="initApp()">
 
     <div id="info-modal" class="modal">
         <h3 id="modal-title" class="text-blue-400 font-black text-xl mb-4 uppercase italic">System Log</h3>
@@ -34,16 +23,16 @@
         <button onclick="closeModal()" class="mt-8 w-full bg-slate-800 py-3 rounded-xl font-bold hover:bg-slate-700 transition-colors">Dismiss</button>
     </div>
 
-    <header class="bg-white px-10 py-5 shadow-sm border-b flex flex-col lg:row justify-between items-center gap-6">
+    <header class="bg-white px-10 py-5 shadow-sm border-b flex flex-col lg:flex-row justify-between items-center gap-6">
         <div>
             <h1 class="text-blue-900 font-black text-2xl tracking-tight">TruMed Path Labs India Pvt Ltd</h1>
             <div class="flex gap-3 mt-1">
-                <span class="text-[9px] bg-blue-50 text-blue-600 px-2.5 py-1 rounded-full font-bold uppercase">7-Day Auto-Cleanup On</span>
+                <span class="text-[9px] bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-full font-bold uppercase">7-Day Check Active</span>
                 <span id="stat-counter" class="text-[9px] bg-slate-100 text-slate-500 px-2.5 py-1 rounded-full font-bold uppercase">0/100 Occupied</span>
             </div>
         </div>
         <div class="flex gap-2 w-full max-w-md">
-            <input type="text" id="global-search" placeholder="Search 7-Day History..." class="flex-1 p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm outline-none focus:border-blue-400">
+            <input type="text" id="global-search" placeholder="Quick Search (7 Days)..." class="flex-1 p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm outline-none focus:border-blue-400">
             <button onclick="deepSearch()" class="bg-slate-900 text-white px-6 py-2 rounded-2xl text-xs font-black shadow-md hover:bg-black transition-all">SEARCH</button>
         </div>
     </header>
@@ -55,7 +44,7 @@
                 <input type="text" id="barcode-input" placeholder="SCAN BARCODE" class="w-full p-5 border-2 border-slate-50 rounded-2xl font-black text-3xl text-center uppercase focus:border-blue-500 focus:bg-white outline-none mb-5 bg-slate-50 transition-all">
                 
                 <div class="space-y-3">
-                    <button id="save-btn" onclick="validateAndSave()" class="w-full bg-blue-600 text-white font-black py-5 rounded-2xl uppercase shadow-xl hover:bg-blue-700 active:scale-[0.98] transition-all">Save & Next</button>
+                    <button id="save-btn" onclick="validateAndSave()" class="w-full bg-blue-600 text-white font-black py-5 rounded-2xl uppercase shadow-xl hover:bg-blue-700 transition-all">Save & Next</button>
                     <div class="grid grid-cols-2 gap-3">
                         <button onclick="deleteSingleSlot()" class="bg-slate-50 text-slate-400 font-bold py-3 rounded-xl text-[10px] uppercase hover:bg-red-50 hover:text-red-500 transition-colors">Clear Slot</button>
                         <button onclick="showAudit()" class="bg-slate-50 text-slate-500 font-bold py-3 rounded-xl text-[10px] uppercase hover:bg-slate-100 transition-colors">Audit Info</button>
@@ -64,13 +53,13 @@
             </div>
 
             <div class="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm space-y-4">
-                <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Archive Navigation</label>
+                <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Archive View</label>
                 <input type="date" id="current-date" onchange="loadData()" class="w-full p-4 border border-slate-100 rounded-2xl font-bold bg-slate-50 text-sm outline-none focus:border-blue-300">
                 <select id="rack-select" onchange="loadData()" class="w-full p-4 border border-slate-100 rounded-2xl font-bold bg-slate-50 text-sm outline-none focus:border-blue-300"></select>
                 
                 <div class="pt-6 border-t border-slate-50">
-                    <button onclick="exportFullDay()" class="w-full bg-emerald-600 text-white p-4 rounded-2xl font-black text-[11px] uppercase shadow-lg hover:bg-emerald-700 transition-all">Download Daily Backup</button>
-                    <p class="text-[9px] text-slate-400 text-center mt-3 font-medium">Auto-formats for Excel (Rack & Slot ID)</p>
+                    <button onclick="exportFullDay()" class="w-full bg-emerald-600 text-white p-4 rounded-2xl font-black text-[11px] uppercase shadow-lg hover:bg-emerald-700 transition-all">Export Daily Backup</button>
+                    <p class="text-[9px] text-slate-400 text-center mt-3 font-medium">Includes Rack ID & Slot ID</p>
                 </div>
             </div>
         </div>
@@ -81,8 +70,6 @@
     </main>
 
     <script>
-        const labPassword = "trumed123"; 
-
         const firebaseConfig = {
             apiKey: "AIzaSyB20KIK_mKTOg-tduRlAZt7ky67CFF8eZY",
             authDomain: "trumed-lab.firebaseapp.com",
@@ -98,33 +85,8 @@
         let currentSlot = 1;
         let activeData = {};
 
-        function checkLogin() {
-            if(document.getElementById('lab-pass').value === labPassword) {
-                document.getElementById('login-overlay').style.display = 'none';
-                init();
-                runAutoCleanup();
-            } else {
-                document.getElementById('err').classList.remove('hidden');
-            }
-        }
-
-        async function runAutoCleanup() {
-            const cutoff = new Date();
-            cutoff.setDate(cutoff.getDate() - 8); // Delete anything older than 7 days
-            const cutoffStr = cutoff.toISOString().split('T')[0];
-            
-            const snapshot = await db.ref('samples').once('value');
-            const allDays = snapshot.val();
-            
-            for (let date in allDays) {
-                if (date < cutoffStr) {
-                    await db.ref(`samples/${date}`).remove();
-                    console.log(`Auto-Deleted expired data: ${date}`);
-                }
-            }
-        }
-
-        function init() {
+        // Runs automatically on page load
+        function initApp() {
             const select = document.getElementById('rack-select');
             for(let i=1; i<=100; i++) { 
                 let o = document.createElement('option'); o.value = `Rack_${i}`; o.innerText = `Rack ${i}`; select.appendChild(o); 
@@ -132,6 +94,18 @@
             document.getElementById('current-date').value = new Date().toISOString().split('T')[0];
             renderGrid();
             loadData();
+            runAutoCleanup();
+        }
+
+        async function runAutoCleanup() {
+            const cutoff = new Date();
+            cutoff.setDate(cutoff.getDate() - 8); 
+            const cutoffStr = cutoff.toISOString().split('T')[0];
+            const snapshot = await db.ref('samples').once('value');
+            const allDays = snapshot.val();
+            for (let date in allDays) {
+                if (date < cutoffStr) await db.ref(`samples/${date}`).remove();
+            }
         }
 
         function renderGrid() {
@@ -148,21 +122,20 @@
             const code = document.getElementById('barcode-input').value.trim().toUpperCase();
             if(!code) return;
             const btn = document.getElementById('save-btn');
-            btn.disabled = true; btn.innerText = "CHECKING...";
+            btn.disabled = true; btn.innerText = "FAST CHECK...";
 
             let dupFound = false;
             let dupMsg = "";
 
-            // Optimized 7-Day Scan
             for (let i = 0; i < 7; i++) {
                 let d = new Date(); d.setDate(d.getDate() - i);
                 let ds = d.toISOString().split('T')[0];
-                const s = await db.ref(`samples/${ds}`).once('value');
-                const day = s.val();
-                if(day) {
-                    for(let r in day) {
-                        for(let sl in day[r]) {
-                            const val = day[r][sl]?.code || day[r][sl];
+                const snapshot = await db.ref(`samples/${ds}`).once('value');
+                const dayData = snapshot.val();
+                if(dayData) {
+                    for(let r in dayData) {
+                        for(let sl in dayData[r]) {
+                            const val = dayData[r][sl]?.code || dayData[r][sl];
                             if(val === code) {
                                 dupFound = true; dupMsg = `Duplicate found on ${ds}\nRack: ${r}, Slot: ${sl.replace('slot-','')}`;
                                 break;
@@ -175,7 +148,7 @@
             }
 
             if(dupFound) {
-                alert("🛑 DUPLICATE DETECTED\n" + dupMsg);
+                alert("🛑 DUPLICATE BLOCKED\n" + dupMsg);
                 document.getElementById('barcode-input').value = '';
             } else {
                 const date = document.getElementById('current-date').value;
@@ -222,7 +195,7 @@
             const body = document.getElementById('modal-body');
             const modal = document.getElementById('info-modal');
             document.getElementById('modal-title').innerText = "Archive Result";
-            body.innerHTML = "Scanning 7-day cloud data...";
+            body.innerHTML = "Scanning 7-day database...";
             modal.style.display = 'block';
             let found = false;
             for (let i = 0; i < 7; i++) {
@@ -244,7 +217,7 @@
                 }
                 if(found) break;
             }
-            if(!found) body.innerHTML = "Sample not found in active 7-day storage.";
+            if(!found) body.innerHTML = "Sample not found in 7-day storage.";
         }
 
         async function exportFullDay() {
@@ -252,7 +225,6 @@
             const snap = await db.ref(`samples/${date}`).once('value');
             const data = snap.val();
             if(!data) return alert("No data recorded for this date.");
-            
             let csv = "RACK ID,SLOT POSITION,BARCODE,SCAN TIME\n";
             for(let r in data) {
                 for(let s in data[r]) {
@@ -264,7 +236,7 @@
             const blob = new Blob([csv], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url; a.download = `TruMed_RackBackup_${date}.csv`; a.click();
+            a.href = url; a.download = `TruMed_Backup_${date}.csv`; a.click();
         }
 
         function setSlot(i) {
@@ -283,7 +255,6 @@
 
         function closeModal() { document.getElementById('info-modal').style.display = 'none'; }
         document.getElementById('barcode-input').addEventListener('keypress', (e) => { if(e.key === 'Enter') validateAndSave(); });
-        document.getElementById('lab-pass').addEventListener('keypress', (e) => { if(e.key === 'Enter') checkLogin(); });
     </script>
 </body>
 </html>
