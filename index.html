@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TruMed | Professional Sample Management</title>
+    <title>TruMed | Advanced Sample Management</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -13,7 +13,7 @@
         .occupied { background-color: #eff6ff; border: 1px solid #3b82f6; }
         .selected { outline: 3px solid #f59e0b; background-color: #fffbeb; z-index: 10; transform: scale(1.02); }
         #login-overlay { position: fixed; inset: 0; background: #ffffff; z-index: 100; display: flex; align-items: center; justify-content: center; }
-        .modal { position: fixed; top: 15%; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 24px; border-radius: 16px; z-index: 50; display: none; width: 90%; max-width: 420px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+        .modal { position: fixed; top: 15%; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 24px; border-radius: 16px; z-index: 50; display: none; width: 90%; max-width: 420px; }
     </style>
 </head>
 <body>
@@ -21,8 +21,8 @@
     <div id="login-overlay">
         <div class="p-10 border rounded-3xl shadow-2xl w-96 text-center bg-white">
             <h1 class="text-3xl font-black text-blue-900 mb-2">TRUMED</h1>
-            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-6">Sample Management System</p>
-            <input type="password" id="lab-pass" placeholder="Enter Password" class="w-full p-4 border rounded-xl mb-4 text-center text-xl outline-none focus:border-blue-500">
+            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-6">Path Labs India Pvt Ltd</p>
+            <input type="password" id="lab-pass" placeholder="Enter Access Key" class="w-full p-4 border rounded-xl mb-4 text-center text-xl outline-none focus:border-blue-500">
             <button onclick="checkLogin()" class="w-full bg-blue-800 text-white py-4 rounded-xl font-black hover:bg-blue-900 shadow-lg">LOGIN</button>
             <p id="err" class="text-red-500 text-xs mt-4 hidden font-bold">Incorrect Access Key</p>
         </div>
@@ -36,15 +36,15 @@
 
     <header class="bg-white px-8 py-4 shadow-sm border-b flex flex-col md:flex-row justify-between items-center gap-4">
         <div>
-            <h1 class="text-blue-900 font-black text-xl">TruMed Path Labs India Pvt Ltd</h1>
+            <h1 class="text-blue-900 font-black text-xl leading-tight">TruMed Path Labs India Pvt Ltd</h1>
             <div class="flex gap-2">
-                <span class="text-[9px] bg-red-100 text-red-600 px-2 py-0.5 rounded font-bold uppercase">Strict 30-Day Duplicate Block Active</span>
+                <span class="text-[9px] bg-red-100 text-red-600 px-2 py-0.5 rounded font-bold uppercase tracking-tighter">Strict 30-Day Duplicate Block Active</span>
                 <span id="stat-counter" class="text-[9px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-bold uppercase">0/100 Full</span>
             </div>
         </div>
         <div class="flex gap-2 w-full md:w-auto">
-            <input type="text" id="global-search" placeholder="Search 30-Day Archive..." class="flex-1 md:w-72 p-3 bg-slate-50 border rounded-xl text-sm outline-none">
-            <button onclick="deepSearch()" class="bg-orange-500 text-white px-6 py-2 rounded-xl text-sm font-black shadow-md">SEARCH ALL</button>
+            <input type="text" id="global-search" placeholder="Search 30-Day History..." class="flex-1 md:w-72 p-3 bg-slate-50 border rounded-xl text-sm outline-none">
+            <button onclick="deepSearch()" class="bg-orange-500 text-white px-6 py-2 rounded-xl text-sm font-black shadow-md">FIND SAMPLE</button>
         </div>
     </header>
 
@@ -55,7 +55,7 @@
                 <input type="text" id="barcode-input" placeholder="SCAN BARCODE" class="w-full p-4 border-2 border-blue-50 rounded-2xl font-black text-3xl text-center uppercase focus:border-blue-600 outline-none mb-4 bg-slate-50">
                 
                 <div class="space-y-2">
-                    <button id="save-btn" onclick="validateAndSave()" class="w-full bg-emerald-600 text-white font-black py-5 rounded-2xl uppercase shadow-lg hover:bg-emerald-700 transition-all">Save & Next</button>
+                    <button id="save-btn" onclick="validateAndSave()" class="w-full bg-emerald-600 text-white font-black py-5 rounded-2xl uppercase shadow-lg hover:bg-emerald-700">Save & Next</button>
                     <div class="grid grid-cols-2 gap-2">
                         <button onclick="deleteSingleSlot()" class="bg-red-50 text-red-600 font-bold py-2 rounded-lg text-[10px] uppercase border border-red-100">Delete Slot</button>
                         <button onclick="showAudit()" class="bg-slate-50 text-slate-600 font-bold py-2 rounded-lg text-[10px] uppercase border border-slate-100">Audit Log</button>
@@ -68,12 +68,11 @@
                 <select id="rack-select" onchange="loadData()" class="w-full p-3 border rounded-xl font-bold bg-slate-50 text-sm"></select>
                 
                 <div class="pt-4 border-t space-y-2">
-                    <button onclick="exportFullDay()" class="w-full bg-blue-600 text-white p-3 rounded-xl font-bold text-xs uppercase shadow-md">Daily Backup (CSV)</button>
+                    <button onclick="exportFullDay()" class="w-full bg-blue-600 text-white p-3 rounded-xl font-bold text-xs uppercase shadow-md">Backup All Racks (CSV)</button>
                     <div class="relative">
                         <input type="file" id="restore-file" onchange="restoreFromCSV()" class="hidden">
-                        <button onclick="document.getElementById('restore-file').click()" class="w-full border-2 border-dashed border-slate-200 text-slate-400 p-3 rounded-xl font-bold text-xs hover:text-blue-500 hover:border-blue-400 transition-all">Restore from CSV</button>
+                        <button onclick="document.getElementById('restore-file').click()" class="w-full border-2 border-dashed border-slate-200 text-slate-400 p-3 rounded-xl font-bold text-xs hover:text-blue-500">Restore CSV to Rack</button>
                     </div>
-                    <button onclick="clearFullRack()" class="w-full text-slate-300 text-[9px] font-bold mt-2 uppercase hover:text-red-500">Format Entire Rack</button>
                 </div>
             </div>
         </div>
@@ -84,8 +83,7 @@
     </main>
 
     <script>
-        // --- Password Setting ---
-        let labPassword = "trumed123"; 
+        const labPassword = "trumed123"; 
 
         const firebaseConfig = {
             apiKey: "AIzaSyB20KIK_mKTOg-tduRlAZt7ky67CFF8eZY",
@@ -105,6 +103,7 @@
         function checkLogin() {
             if(document.getElementById('lab-pass').value === labPassword) {
                 document.getElementById('login-overlay').style.display = 'none';
+                init();
             } else {
                 document.getElementById('err').classList.remove('hidden');
             }
@@ -134,12 +133,11 @@
             const code = document.getElementById('barcode-input').value.trim().toUpperCase();
             if(!code) return;
             const btn = document.getElementById('save-btn');
-            btn.disabled = true; btn.innerText = "CHECKING ARCHIVES...";
+            btn.disabled = true; btn.innerText = "CHECKING DUPLICATES...";
 
-            let duplicateFound = false;
-            let foundMsg = "";
+            let dupFound = false;
+            let dupMsg = "";
 
-            // --- STRICT 30-DAY CHECK ---
             for (let i = 0; i < 30; i++) {
                 let d = new Date(); d.setDate(d.getDate() - i);
                 let ds = d.toISOString().split('T')[0];
@@ -150,24 +148,23 @@
                         for(let sl in day[r]) {
                             const val = day[r][sl]?.code || day[r][sl];
                             if(val === code) {
-                                duplicateFound = true;
-                                foundMsg = `Found on ${ds} in ${r}`;
+                                dupFound = true; dupMsg = `Found on ${ds} in ${r}`;
                                 break;
                             }
                         }
-                        if(duplicateFound) break;
+                        if(dupFound) break;
                     }
                 }
-                if(duplicateFound) break;
+                if(dupFound) break;
             }
 
-            if(duplicateFound) {
-                alert("❌ DUPLICATE BLOCKED\n" + foundMsg);
+            if(dupFound) {
+                alert("❌ DUPLICATE BLOCKED\n" + dupMsg);
                 document.getElementById('barcode-input').value = '';
             } else {
                 const date = document.getElementById('current-date').value;
                 const rack = document.getElementById('rack-select').value;
-                const entry = { code: code, time: new Date().toLocaleTimeString() };
+                const entry = { code: code, time: new Date().toLocaleString() };
                 await db.ref(`samples/${date}/${rack}/slot-${currentSlot}`).set(entry);
                 document.getElementById('barcode-input').value = '';
                 if(currentSlot < 100) setSlot(currentSlot + 1);
@@ -198,8 +195,8 @@
             const modal = document.getElementById('info-modal');
             document.getElementById('modal-title').innerText = `Audit: Slot ${currentSlot}`;
             document.getElementById('modal-body').innerHTML = data?.time 
-                ? `<div class='bg-slate-700 p-3 rounded'>Barcode: <b>${data.code}</b><br>Logged: <b>${data.time}</b></div>`
-                : "No data in this slot.";
+                ? `<div class='bg-slate-700 p-3 rounded'>Barcode: <b>${data.code}</b><br>Time Logged: <b>${data.time}</b></div>`
+                : "No data found for this slot.";
             modal.style.display = 'block';
         }
 
@@ -208,8 +205,8 @@
             if(!term) return;
             const body = document.getElementById('modal-body');
             const modal = document.getElementById('info-modal');
-            document.getElementById('modal-title').innerText = "30-Day Search";
-            body.innerHTML = "Searching...";
+            document.getElementById('modal-title').innerText = "Search Result";
+            body.innerHTML = "Searching 30-day cloud data...";
             modal.style.display = 'block';
             let found = false;
             for (let i = 0; i < 30; i++) {
@@ -222,7 +219,7 @@
                         for(let sl in day[r]) {
                             const val = day[r][sl]?.code || day[r][sl];
                             if(val === term) {
-                                body.innerHTML = `<div class='bg-green-900 p-4 rounded'><b>MATCH FOUND</b><br>Date: ${ds}<br>Rack: ${r}<br>Slot: ${sl}</div>`;
+                                body.innerHTML = `<div class='bg-green-800 p-4 rounded'><b>MATCH FOUND</b><br>Date: ${ds}<br>Rack: ${r}<br>Slot: ${sl}</div>`;
                                 found = true; break;
                             }
                         }
@@ -231,7 +228,7 @@
                 }
                 if(found) break;
             }
-            if(!found) body.innerHTML = "Not found in 30-day archive.";
+            if(!found) body.innerHTML = "No record found in archive.";
         }
 
         async function restoreFromCSV() {
@@ -245,4 +242,48 @@
                 for(let i=1; i<lines.length; i++) {
                     const cols = lines[i].split(',');
                     if(cols[1]) {
-                        await db.ref(`samples/${d}/${r}/slot-${
+                        await db.ref(`samples/${d}/${r}/slot-${cols[0].trim()}`).set({code: cols[1].trim(), time: "Restored from CSV"});
+                    }
+                }
+                alert("Rack restoration complete.");
+            };
+            reader.readAsText(file);
+        }
+
+        function deleteSingleSlot() {
+            if(confirm(`Wipe Slot ${currentSlot}?`)) {
+                db.ref(`samples/${document.getElementById('current-date').value}/${document.getElementById('rack-select').value}/slot-${currentSlot}`).remove();
+            }
+        }
+
+        async function exportFullDay() {
+            const date = document.getElementById('current-date').value;
+            const snap = await db.ref(`samples/${date}`).once('value');
+            const data = snap.val();
+            if(!data) return alert("No data available for this date.");
+            let csv = "Slot,Barcode,Rack\n";
+            for(let r in data) {
+                for(let s in data[r]) {
+                    const code = data[r][s]?.code || data[r][s];
+                    csv += `${s.replace('slot-','')},${code},${r}\n`;
+                }
+            }
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `TruMed_Backup_${date}.csv`; a.click();
+        }
+
+        function setSlot(i) {
+            document.querySelectorAll('.slot').forEach(s => s.classList.remove('selected'));
+            currentSlot = i;
+            document.getElementById(`slot-${i}`).classList.add('selected');
+            document.getElementById('display-slot').innerText = `Selected: Slot ${i}`;
+            document.getElementById('barcode-input').focus();
+        }
+
+        function closeModal() { document.getElementById('info-modal').style.display = 'none'; }
+        document.getElementById('barcode-input').addEventListener('keypress', (e) => { if(e.key === 'Enter') validateAndSave(); });
+    </script>
+</body>
+</html>
